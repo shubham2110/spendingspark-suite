@@ -41,9 +41,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         getTransactions(),
       ]);
       
-      setUsers(usersData || []);
-      setWallets(walletsData || []);
-      setTransactions(transactionsData || []);
+
+
+      setUsers(Array.isArray(usersData) ? usersData : []);
+      setWallets(Array.isArray(walletsData) ? walletsData : []);
+      setTransactions(Array.isArray(transactionsData) ? transactionsData : []);
 
       // Set default selections
       if (!selectedUser && usersData?.length > 0) {
@@ -67,7 +69,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const refreshTransactions = async () => {
     try {
       const data = await getTransactions();
-      setTransactions(data || []);
+      setTransactions(Array.isArray(data) ? data : []);
     } catch (err: any) {
       toast.error('Failed to refresh transactions');
     }
@@ -76,7 +78,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const refreshWallets = async () => {
     try {
       const data = await getWallets();
-      setWallets(data || []);
+      setWallets(Array.isArray(data) ? data : []);
     } catch (err: any) {
       toast.error('Failed to refresh wallets');
     }
@@ -86,7 +88,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (selectedWallet) {
       try {
         const data = await getCategoryTree(selectedWallet.id);
-        setCategories(data || []);
+        setCategories(Array.isArray(data) ? data : []);
       } catch (err: any) {
         toast.error('Failed to refresh categories');
       }

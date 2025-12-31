@@ -66,7 +66,7 @@ export interface WalletGroup {
 // Init API
 export const checkServerStatus = async () => {
   const response = await api.get('/initdone');
-  return response.data;
+  return response.data?.init_done || false;
 };
 
 export const initDatabase = async (data: {
@@ -84,7 +84,7 @@ export const initDatabase = async (data: {
 // Users API
 export const getUsers = async (): Promise<User[]> => {
   const response = await api.get('/users');
-  return response.data;
+  return response.data?.data || [];
 };
 
 export const createUser = async (data: {
@@ -124,7 +124,14 @@ export const removeUserFromWallet = async (userId: number, walletId: number) => 
 // Wallets API
 export const getWallets = async (): Promise<Wallet[]> => {
   const response = await api.get('/wallets');
-  return response.data;
+  const wallets = response.data?.data || [];
+  return wallets.map(wallet => ({
+    id: wallet.wallet_id,
+    name: wallet.name,
+    icon: wallet.icon,
+    is_enabled: wallet.is_enabled,
+    balance: wallet.balance,
+  }));
 };
 
 export const getWallet = async (id: number): Promise<Wallet> => {
@@ -160,7 +167,7 @@ export const getCategories = async (walletId: number): Promise<Category[]> => {
 
 export const getCategoryTree = async (walletId: number): Promise<Category[]> => {
   const response = await api.get(`/wallets/${walletId}/categories/tree`);
-  return response.data;
+  return response.data?.data || [];
 };
 
 export const createCategory = async (walletId: number, data: {
@@ -208,7 +215,7 @@ export const getTransactions = async (filters?: TransactionFilters): Promise<Tra
     });
   }
   const response = await api.get(`/transactions${params.toString() ? `?${params.toString()}` : ''}`);
-  return response.data;
+  return response.data?.data || [];
 };
 
 export const getWalletTransactions = async (walletId: number, filters?: TransactionFilters): Promise<Transaction[]> => {

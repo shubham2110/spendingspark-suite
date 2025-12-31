@@ -58,20 +58,23 @@ export const InitializationScreen: React.FC<InitializationScreenProps> = ({ onIn
   const checkInitStatus = async () => {
     setStatus('checking');
     setErrorMessage(null);
-    
+
     try {
       const response = await checkServerStatus();
+
       // The API returns the initialization status
-      // If initialized, response might be true or contain init data
-      if (response === true || response?.initialized === true || response?.status === 'initialized') {
+      // If initialized, response should be true
+      const isInitialized = response === true || response === 'true' || (typeof response === 'string' && response.toLowerCase() === 'true') || response?.initialized === true;
+      if (isInitialized) {
         setStatus('initialized');
         setTimeout(() => onInitialized(), 1000);
       } else {
         setStatus('not_initialized');
       }
     } catch (error: any) {
-      // If the endpoint returns an error or false, database needs initialization
-      if (error.response?.status === 404 || error.response?.data === false || error.message?.includes('not initialized')) {
+
+      // If the endpoint returns 404 or other error indicating not initialized
+      if (error.response?.status === 404 || error.response?.status === 500) {
         setStatus('not_initialized');
       } else {
         // Server might be down or other error - still show init form

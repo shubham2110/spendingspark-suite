@@ -1,0 +1,1021 @@
+# Check if Server is Initiatated
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/initdone"
+
+# Init the Database
+
+$body = @{
+     force_migrate = $true
+     default_wallet_name = "My Wallet"
+     admin_username = "admin1"
+     admin_password = "pass123"
+     admin_email = "admin1@example.com"
+     admin_name = "Administrator"
+ } | ConvertTo-Json
+
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/init" `
+   -Method Post `
+   -Headers @{"Content-Type"="application/json"} `
+   -Body $body
+
+
+# Create User
+
+$uri = "https://ml.xlr.ovh//api/users"
+
+$body = @{
+     username           = "johndoe1"
+     name               = "John Doe"
+     email              = "john.doe1@example.com"
+     password           = "StrongPassword123!"
+     user_type          = "regular"       # must match models.UserType
+     wallet_name        = "Main Wallet"
+     wallet_group_name  = "Personal"
+     create_categories  = $true
+ } | ConvertTo-Json -Depth 3
+
+Invoke-RestMethod `
+     -Uri $uri `
+     -Method Post `
+     -Headers @{
+         "Content-Type" = "application/json"
+     } `
+    -Body $body
+
+# Get List of users
+
+Invoke-RestMethod -Uri https://ml.xlr.ovh//api/users
+
+# Modify a User
+
+$uri = "https://ml.xlr.ovh//api/users/5"
+$body = @{
+     username = "new_username"
+ } | ConvertTo-Json
+
+Invoke-RestMethod `
+     -Uri $uri `
+     -Method Put `
+     -ContentType "application/json" `
+     -Body $body
+
+# Add user to wallet
+
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/users/1/wallets/2" -Method POST
+
+# Detach user from wallet
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/users/1/wallets/2" -Method DELETE
+
+# List User1 wallet
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/users/1/wallets" -Method GET
+
+# Repalce user's wallet
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/users/1/wallets" `
+  -Method PUT `
+  -Headers @{ "Content-Type" = "application/json" } `
+  -Body '{ "wallet_ids": [1, 3, 5] }'
+
+# Create New Wallet 
+
+Invoke-RestMethod `
+   -Uri "https://ml.xlr.ovh//api/wallets" `
+   -Method POST `
+   -Headers @{ "Content-Type" = "application/json" } `
+   -Body '{
+     "name": "Main Wallet",
+     "icon": "X",
+     "is_enabled": true,
+     "balance": 1000
+   }'
+
+# Update wallet 
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/wallets/1" `
+  -Method PUT `
+  -Headers @{ "Content-Type" = "application/json" } `
+  -Body '{
+    "name": "Updated Wallet Name",
+    "icon": "🏦",
+    "is_enabled": true,
+    "balance": 2500
+  }'
+
+
+# Create walletgroup
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/walletgroups" `
+  -Method POST `
+  -Headers @{ "Content-Type" = "application/json" } `
+  -Body '{
+    "wallet_group_name": "Family Expenses"
+  }'
+
+# List all wallet group
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/walletgroups" `
+  -Method GET
+
+
+# Get wallet group by ID 
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/walletgroups/1" `
+  -Method GET
+
+# Update Wallet Group Name
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/walletgroups/1" `
+  -Method PUT `
+  -Headers @{ "Content-Type" = "application/json" } `
+  -Body '{
+    "wallet_group_name": "Updated Family Group"
+  }'
+
+# Delete wallet group
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/walletgroups/1" `
+  -Method DELETE
+
+# Attach Wallet to Wallet Group
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/walletgroups/1/wallets/2" `
+  -Method POST
+
+# Detach Wallet from Wallet Group
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/walletgroups/1/wallets/2" `
+  -Method DELETE
+
+# List Wallets in a Wallet Group
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/walletgroups/1/wallets" `
+  -Method GET
+
+# Replace Wallets in a Wallet Group (attach multiple at once)
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/walletgroups/1/wallets" `
+  -Method PUT `
+  -Headers @{ "Content-Type" = "application/json" } `
+  -Body '{
+    "wallet_ids": [1, 2, 3]
+  }'
+
+# List Wallet Groups for a User (via ORM preload)
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/users/1/walletgroups" `
+  -Method GET
+
+# Create a Category for a Wallet
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/wallets/1/categories" `
+  -Method POST `
+  -Headers @{ "Content-Type" = "application/json" } `
+  -Body '{
+    "name": "Groceries",
+    "icon": "🛒",
+    "parent_id": null,
+    "is_global": false
+  }'
+
+# Create a Global Category (syncs to all wallets)
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/wallets/1/categories" `
+  -Method POST `
+  -Headers @{ "Content-Type" = "application/json" } `
+  -Body '{
+    "name": "Transportation",
+    "icon": "🚗",
+    "parent_id": null,
+    "is_global": true
+  }'
+
+# List Categories for a Wallet (flat list)
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/wallets/1/categories" `
+  -Method GET
+
+# Get Category Tree for a Wallet (hierarchical)
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/wallets/1/categories/tree" `
+  -Method GET
+
+# Get a Specific Category
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/wallets/1/categories/5" `
+  -Method GET
+
+# Update a Category
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/wallets/1/categories/5" `
+  -Method PUT `
+  -Headers @{ "Content-Type" = "application/json" } `
+  -Body '{
+    "name": "Updated Groceries",
+    "icon": "🛒",
+    "is_global": true
+  }'
+
+# Delete a Category
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/wallets/1/categories/5" `
+  -Method DELETE
+
+# Sync Global Category to All Wallets
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/wallets/1/categories/5/sync-global" `
+  -Method POST
+
+# Create a Person
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/persons" `
+  -Method POST `
+  -Headers @{ "Content-Type" = "application/json" } `
+  -Body '{
+    "person_name": "John Smith",
+    "alias": "Johnny"
+  }'
+
+# List All Persons
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/persons" `
+  -Method GET
+
+# Get a Specific Person
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/persons/1" `
+  -Method GET
+
+# Update a Person
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/persons/1" `
+  -Method PUT `
+  -Headers @{ "Content-Type" = "application/json" } `
+  -Body '{
+    "person_name": "Updated Name",
+    "alias": "Updated Alias"
+  }'
+
+# Delete a Person
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/persons/1" `
+  -Method DELETE
+
+# Create a Transaction
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/transactions" `
+  -Method POST `
+  -Headers @{ "Content-Type" = "application/json" } `
+  -Body '{
+    "wallet_id": 1,
+    "category_id": 1,
+    "amount": 50.00,
+    "person_name": "New Person",
+    "note": "Lunch expense",
+    "user_id": 1
+  }'
+
+# List All Transactions
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/transactions" `
+  -Method GET
+
+# Get a Specific Transaction
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/transactions/1" `
+  -Method GET
+
+# Update a Transaction
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/transactions/1" `
+  -Method PUT `
+  -Headers @{ "Content-Type" = "application/json" } `
+  -Body '{
+    "amount": 60.00,
+    "note": "Updated note"
+  }'
+
+# Delete a Transaction
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/transactions/1" `
+  -Method DELETE
+
+# Create a Transaction for a Specific Wallet
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/wallets/1/transactions" `
+  -Method POST `
+  -Headers @{ "Content-Type" = "application/json" } `
+  -Body '{
+    "category_id": 1,
+    "amount": 50.00,
+    "person_name": "New Person",
+    "note": "Lunch expense",
+    "user_id": 1
+  }'
+
+# List Transactions for a Specific Wallet
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/wallets/1/transactions" `
+  -Method GET
+
+# Detailed Transaction Filtering Examples
+
+## Filter by User ID
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?user_id=1" -Method GET
+
+## Filter by Date Ranges (Transaction Time)
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?start_transaction_time=2025-01-01T00:00:00Z&end_transaction_time=2025-12-31T23:59:59Z" -Method GET
+
+## Filter by Entry Time Range
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?start_entry_time=2025-01-01T00:00:00Z" -Method GET
+
+## Filter by Last Modified Time
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?end_last_modified_time=2025-12-31T23:59:59Z" -Method GET
+
+## Filter by Categories (Multiple)
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?category_ids=1,2,3" -Method GET
+
+## Filter by Single Category
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?category_ids=5" -Method GET
+
+## Filter by Wallet ID (Global Endpoint)
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?wallet_id=1" -Method GET
+
+## Filter by Person ID
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?person_id=2" -Method GET
+
+## Filter by Amount (Greater Than)
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?amount_op=gt&amount_value=100" -Method GET
+
+## Filter by Amount (Less Than or Equal)
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?amount_op=le&amount_value=50" -Method GET
+
+## Filter by Amount (Equal)
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?amount_op=eq&amount_value=25.50" -Method GET
+
+## Filter by Note (Fuzzy Search)
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?fuzzy_note=lunch" -Method GET
+
+## Combined Filters Example
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?user_id=1&start_transaction_time=2025-01-01T00:00:00Z&category_ids=1,2&amount_op=gt&amount_value=10&fuzzy_note=expense" -Method GET
+
+## Wallet-Specific Filters
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/transactions?start_entry_time=2025-01-01T00:00:00Z&person_id=1" -Method GET
+
+# Get a Specific Transaction for a Wallet
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/wallets/1/transactions/13" `
+  -Method GET
+
+# Update a Transaction for a Wallet
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/wallets/1/transactions/13" `
+  -Method PUT `
+  -Headers @{ "Content-Type" = "application/json" } `
+  -Body '{
+    "amount": 60.00,
+    "note": "Updated note"
+  }'
+
+# Delete a Transaction for a Wallet
+
+Invoke-RestMethod `
+  -Uri "https://ml.xlr.ovh//api/wallets/1/transactions/13" `
+  -Method DELETE
+
+-----------
+# User Journey Workflows
+
+## Journey 1: Complete Setup and Basic Transaction Management
+# 1. Initialize Database
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/initdone"
+$body = @{ force_migrate = $true; default_wallet_name = "Personal Wallet"; admin_username = "admin"; admin_password = "pass123"; admin_email = "admin@example.com"; admin_name = "Administrator" } | ConvertTo-Json
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/init" -Method Post -Headers @{"Content-Type"="application/json"} -Body $body
+
+# 2. Create User with Wallet and Categories
+$body = @{ username = "johndoe"; name = "John Doe"; email = "john@example.com"; password = "SecurePass123!"; user_type = "regular"; wallet_name = "Main Wallet"; wallet_group_name = "Personal"; create_categories = $true } | ConvertTo-Json -Depth 3
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/users" -Method Post -Headers @{"Content-Type"="application/json"} -Body $body
+
+# 3. Create Additional Categories
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method Post -Headers @{"Content-Type"="application/json"} -Body '{"name": "Food & Dining", "icon": "🍽️", "is_global": false}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method Post -Headers @{"Content-Type"="application/json"} -Body '{"name": "Transportation", "icon": "🚗", "is_global": false}'
+
+# 4. Create Persons
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/persons" -Method Post -Headers @{"Content-Type"="application/json"} -Body '{"person_name": "Grocery Store", "alias": "Local Market"}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/persons" -Method Post -Headers @{"Content-Type"="application/json"} -Body '{"person_name": "Gas Station"}'
+
+# 5. Add Transactions
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method Post -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 45.50, "person_name": "Grocery Store", "note": "Weekly groceries", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method Post -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 25.00, "person_name": "Gas Station", "note": "Fuel for car", "user_id": 1}'
+
+# 6. View All Transactions
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method GET
+
+# 7. Filter Transactions by Category
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?category_ids=1" -Method GET
+
+## Journey 2: Multi-Wallet Management and Transfers
+# 1. Create Additional Wallet
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets" -Method Post -Headers @{"Content-Type"="application/json"} -Body '{"name": "Savings Account", "icon": "💰", "is_enabled": true, "balance": 1000}'
+
+# 2. Create Transfer Category
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method Post -Headers @{"Content-Type"="application/json"} -Body '{"name": "Transfer", "icon": "↔️", "is_global": false}'
+
+# 3. Add Transfer Transactions (Note: In real app, this would be paired)
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method Post -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 3, "amount": -200.00, "note": "Transfer to Savings", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method Post -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 2, "category_id": 3, "amount": 200.00, "note": "Transfer from Main", "user_id": 1}'
+
+# 4. Check Wallet Balances
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1" -Method GET
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/2" -Method GET
+
+# 5. List Transactions by Wallet
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/transactions" -Method GET
+
+## Journey 3: Monthly Expense Tracking and Reporting
+# 1. Add Monthly Expenses
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method Post -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 120.00, "note": "Rent payment", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method Post -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 85.30, "note": "Electricity bill", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method Post -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 60.00, "note": "Internet bill", "user_id": 1}'
+
+# 2. Filter by Date Range (Current Month)
+$startDate = (Get-Date -Day 1 -Hour 0 -Minute 0 -Second 0).ToString("yyyy-MM-ddTHH:mm:ssZ")
+$endDate = (Get-Date -Day (Get-Date).Day -Hour 23 -Minute 59 -Second 59).ToString("yyyy-MM-ddTHH:mm:ssZ")
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?start_transaction_time=$startDate&end_transaction_time=$endDate" -Method GET
+
+# 3. Filter by Amount Range (High expenses)
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?amount_op=gt&amount_value=50" -Method GET
+
+# 4. Search by Note Content
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?fuzzy_note=bill" -Method GET
+
+## Journey 4: Category Management and Global Categories
+# 1. Create Global Categories
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method Post -Headers @{"Content-Type"="application/json"} -Body '{"name": "Income", "icon": "💼", "is_global": true}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method Post -Headers @{"Content-Type"="application/json"} -Body '{"name": "Entertainment", "icon": "🎬", "is_global": true}'
+
+# 2. Check if Global Categories Synced to Other Wallets
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/2/categories" -Method GET
+
+# 3. Add Income Transaction
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method Post -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 4, "amount": 3000.00, "note": "Monthly salary", "user_id": 1}'
+
+# 4. Add Entertainment Expense
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method Post -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 5, "amount": 75.00, "note": "Movie night", "user_id": 1}'
+
+# 5. Filter by Global Category
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?category_ids=5" -Method GET
+
+## Journey 5: Data Cleanup and Maintenance
+# 1. List All Transactions (Before Cleanup)
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method GET
+
+# 2. Update Incorrect Transaction
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions/1" -Method PUT -Headers @{"Content-Type"="application/json"} -Body '{"amount": 50.00, "note": "Corrected grocery amount"}'
+
+# 3. Delete Duplicate/Stale Transaction
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions/2" -Method DELETE
+
+# 4. Update Person Information
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/persons/1" -Method PUT -Headers @{"Content-Type"="application/json"} -Body '{"person_name": "Updated Store Name"}'
+
+# 5. Check Final State
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method GET
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/persons" -Method GET
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1" -Method GET
+
+-----------
+Start writing from here: Additional Comprehensive API Usage Samples
+
+# Additional Transaction Management Use Cases
+
+## Use Case: Daily Expense Tracking
+# Morning coffee
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 5.50, "note": "Morning coffee at cafe", "user_id": 1}'
+
+# Lunch
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 12.75, "person_name": "Restaurant ABC", "note": "Business lunch", "user_id": 1}'
+
+# Evening groceries
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 67.30, "person_name": "SuperMart", "note": "Weekly groceries", "user_id": 1}'
+
+# Filter today's expenses
+$today = Get-Date -Format "yyyy-MM-dd"
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?start_transaction_time=${today}T00:00:00Z&end_transaction_time=${today}T23:59:59Z" -Method GET
+
+## Use Case: Budget Monitoring
+# Set monthly budget categories
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Monthly Budget", "icon": "📊", "is_global": false}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Savings Goal", "icon": "🎯", "is_global": false}'
+
+# Track budget vs actual
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?category_ids=1,2&start_transaction_time=2025-01-01T00:00:00Z&end_transaction_time=2025-01-31T23:59:59Z" -Method GET
+
+## Use Case: Recurring Payments
+# Monthly subscriptions
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 15.99, "person_name": "Netflix", "note": "Monthly subscription", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 12.99, "person_name": "Spotify", "note": "Premium subscription", "user_id": 1}'
+
+# Filter subscriptions
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?fuzzy_note=subscription" -Method GET
+
+## Use Case: Business Expense Tracking
+# Client meetings
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 45.00, "person_name": "Client XYZ Corp", "note": "Business lunch meeting", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 120.00, "person_name": "Conference Center", "note": "Conference registration", "user_id": 1}'
+
+# Business expense report
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?fuzzy_note=business&amount_op=gt&amount_value=20" -Method GET
+
+## Use Case: Travel Expenses
+# Flight booking
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 450.00, "person_name": "Airline Co", "note": "Flight to New York", "user_id": 1}'
+
+# Hotel
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 280.00, "person_name": "Hotel Chain", "note": "3 nights accommodation", "user_id": 1}'
+
+# Travel per diem
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 75.00, "note": "Daily meal allowance", "user_id": 1}'
+
+# Travel expense summary
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?fuzzy_note=travel&start_transaction_time=2025-01-01T00:00:00Z" -Method GET
+
+## Use Case: Family Budget Sharing
+# Family member expenses
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 25.00, "person_name": "Family Member A", "note": "Shared dinner", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 30.00, "person_name": "Family Member B", "note": "Movie tickets", "user_id": 1}'
+
+# Filter by person
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?person_id=1" -Method GET
+
+## Use Case: Investment Tracking
+# Stock purchases
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 2, "category_id": 4, "amount": -500.00, "person_name": "Brokerage Firm", "note": "Stock purchase - TECH Corp", "user_id": 1}'
+
+# Dividend income
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 2, "category_id": 4, "amount": 25.50, "person_name": "Brokerage Firm", "note": "Dividend payment", "user_id": 1}'
+
+# Investment performance
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?category_ids=4&wallet_id=2" -Method GET
+
+## Use Case: Emergency Fund Management
+# Emergency withdrawals
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 2, "category_id": 3, "amount": -300.00, "note": "Emergency car repair", "user_id": 1}'
+
+# Emergency deposits
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 2, "category_id": 4, "amount": 150.00, "note": "Emergency fund contribution", "user_id": 1}'
+
+## Use Case: Seasonal Expense Planning
+# Holiday shopping
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 5, "amount": 89.99, "person_name": "Online Store", "note": "Holiday gifts", "user_id": 1}'
+
+# Seasonal decorations
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 5, "amount": 45.00, "person_name": "Decor Store", "note": "Christmas decorations", "user_id": 1}'
+
+# Holiday entertainment
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?category_ids=5&fuzzy_note=holiday" -Method GET
+
+## Use Case: Tax Preparation
+# Tax-deductible expenses
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 200.00, "person_name": "Charity Org", "note": "Tax-deductible donation", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 350.00, "person_name": "Medical Center", "note": "Medical expenses", "user_id": 1}'
+
+# Tax year summary
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?start_transaction_time=2024-01-01T00:00:00Z&end_transaction_time=2024-12-31T23:59:59Z&fuzzy_note=tax" -Method GET
+
+## Use Case: Multi-User Household
+# Shared household expenses
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 150.00, "note": "Monthly utilities split", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 150.00, "note": "Monthly utilities split", "user_id": 2}'
+
+# Filter by user
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?user_id=1" -Method GET
+
+## Use Case: Goal-Oriented Saving
+# Savings transfers
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 3, "amount": -100.00, "note": "Vacation fund transfer", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 2, "category_id": 4, "amount": 100.00, "note": "Vacation savings deposit", "user_id": 1}'
+
+# Goal progress
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?wallet_id=2&fuzzy_note=vacation" -Method GET
+
+## Use Case: Cash Flow Analysis
+# Income tracking
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 4, "amount": 2500.00, "person_name": "Employer", "note": "Monthly salary", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 4, "amount": 150.00, "person_name": "Freelance Client", "note": "Project payment", "user_id": 1}'
+
+# Expense tracking
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 800.00, "person_name": "Landlord", "note": "Monthly rent", "user_id": 1}'
+
+# Monthly cash flow
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?start_transaction_time=2025-01-01T00:00:00Z&end_transaction_time=2025-01-31T23:59:59Z" -Method GET
+
+## Use Case: Debt Management
+# Loan payments
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 250.00, "person_name": "Bank", "note": "Car loan payment", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 180.00, "person_name": "Credit Card", "note": "Minimum payment", "user_id": 1}'
+
+# Debt payoff progress
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?fuzzy_note=loan&fuzzy_note=payment" -Method GET
+
+## Use Case: Gift and Special Occasions
+# Gift purchases
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 5, "amount": 125.00, "person_name": "Gift Shop", "note": "Birthday gift", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 5, "amount": 75.00, "person_name": "Florist", "note": "Anniversary flowers", "user_id": 1}'
+
+# Special occasion spending
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?category_ids=5&start_transaction_time=2025-01-01T00:00:00Z" -Method GET
+
+## Use Case: Home Improvement Projects
+# DIY supplies
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 89.99, "person_name": "Hardware Store", "note": "Paint and brushes for bedroom", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 45.50, "person_name": "Home Depot", "note": "Garden tools", "user_id": 1}'
+
+# Project tracking
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?fuzzy_note=home&fuzzy_note=improvement" -Method GET
+
+## Use Case: Educational Expenses
+# Course fees
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 299.00, "person_name": "Online Learning Platform", "note": "Programming course", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 75.00, "person_name": "Bookstore", "note": "Technical books", "user_id": 1}'
+
+# Education budget
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?fuzzy_note=course&fuzzy_note=book" -Method GET
+
+## Use Case: Health and Wellness
+# Medical expenses
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 120.00, "person_name": "Doctor Office", "note": "Annual checkup", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 45.00, "person_name": "Pharmacy", "note": "Prescription medication", "user_id": 1}'
+
+# Gym membership
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 50.00, "person_name": "Fitness Center", "note": "Monthly membership", "user_id": 1}'
+
+# Health expense tracking
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?fuzzy_note=medical&fuzzy_note=health" -Method GET
+
+## Use Case: Vehicle Maintenance
+# Car maintenance
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 85.00, "person_name": "Auto Shop", "note": "Oil change and tire rotation", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 150.00, "person_name": "Mechanic", "note": "Brake pad replacement", "user_id": 1}'
+
+# Insurance
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 120.00, "person_name": "Insurance Co", "note": "Auto insurance premium", "user_id": 1}'
+
+# Vehicle expense summary
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?fuzzy_note=car&fuzzy_note=auto&fuzzy_note=insurance" -Method GET
+
+## Use Case: Pet Care Expenses
+# Pet food and supplies
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 45.99, "person_name": "Pet Store", "note": "Dog food and treats", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 200.00, "person_name": "Vet Clinic", "note": "Annual checkup and vaccinations", "user_id": 1}'
+
+# Pet care tracking
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?fuzzy_note=pet&fuzzy_note=vet&fuzzy_note=dog" -Method GET
+
+## Use Case: Technology and Gadgets
+# Device purchases
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 5, "amount": 299.99, "person_name": "Tech Store", "note": "New smartphone", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 5, "amount": 49.99, "person_name": "Accessory Shop", "note": "Phone case and screen protector", "user_id": 1}'
+
+# Software subscriptions
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 9.99, "person_name": "Cloud Service", "note": "Monthly storage subscription", "user_id": 1}'
+
+# Tech spending analysis
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?fuzzy_note=phone&fuzzy_note=tech&fuzzy_note=software" -Method GET
+
+## Use Case: Travel and Vacation
+# Vacation planning
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 850.00, "person_name": "Travel Agency", "note": "Flight and hotel package", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 120.00, "person_name": "Restaurant", "note": "Pre-vacation dinner", "user_id": 1}'
+
+# Vacation expenses
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 5, "amount": 65.00, "person_name": "Gift Shop", "note": "Souvenirs", "user_id": 1}'
+
+# Vacation budget tracking
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?fuzzy_note=vacation&fuzzy_note=travel&fuzzy_note=flight" -Method GET
+
+## Use Case: Home Office Setup
+# Office supplies
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 199.99, "person_name": "Office Supply", "note": "Ergonomic chair", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 149.99, "person_name": "Computer Store", "note": "External monitor", "user_id": 1}'
+
+# Internet and utilities for home office
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 75.00, "person_name": "ISP", "note": "High-speed internet", "user_id": 1}'
+
+# Home office expense report
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?fuzzy_note=office&fuzzy_note=home&fuzzy_note=monitor" -Method GET
+
+## Use Case: Charitable Donations
+# Regular donations
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 50.00, "person_name": "Local Charity", "note": "Monthly donation", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 25.00, "person_name": "Animal Shelter", "note": "Pet adoption support", "user_id": 1}'
+
+# Special campaigns
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 100.00, "person_name": "Red Cross", "note": "Disaster relief donation", "user_id": 1}'
+
+# Donation tracking
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?fuzzy_note=donation&fuzzy_note=charity" -Method GET
+
+## Use Case: Insurance Premiums
+# Various insurance payments
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 95.00, "person_name": "Insurance Company", "note": "Home insurance quarterly", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 45.00, "person_name": "Dental Insurance", "note": "Monthly dental coverage", "user_id": 1}'
+
+# Life insurance
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 75.00, "person_name": "Life Insurance Co", "note": "Term life insurance", "user_id": 1}'
+
+# Insurance expense summary
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?fuzzy_note=insurance" -Method GET
+
+## Use Case: Child Education
+# School supplies
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 85.50, "person_name": "School Store", "note": "Back to school supplies", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 120.00, "person_name": "Bookstore", "note": "Textbooks and materials", "user_id": 1}'
+
+# Extracurricular activities
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 5, "amount": 150.00, "person_name": "Music School", "note": "Piano lessons", "user_id": 1}'
+
+# Education expense tracking
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?fuzzy_note=school&fuzzy_note=education&fuzzy_note=book" -Method GET
+
+## Use Case: Home Security
+# Security system installation
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 499.99, "person_name": "Security Company", "note": "Home security system installation", "user_id": 1}'
+
+# Monthly monitoring
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 39.99, "person_name": "Security Company", "note": "Monthly monitoring service", "user_id": 1}'
+
+# Security expenses
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?fuzzy_note=security" -Method GET
+
+## Use Case: Professional Development
+# Conference fees
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 350.00, "person_name": "Conference Org", "note": "Industry conference registration", "user_id": 1}'
+
+# Professional memberships
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 150.00, "person_name": "Professional Association", "note": "Annual membership fee", "user_id": 1}'
+
+# Training materials
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 2, "amount": 89.99, "person_name": "Online Platform", "note": "Professional certification course", "user_id": 1}'
+
+# Professional development tracking
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?fuzzy_note=conference&fuzzy_note=professional&fuzzy_note=certification" -Method GET
+
+## Use Case: Gardening and Outdoor
+# Gardening supplies
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 67.89, "person_name": "Garden Center", "note": "Plants and soil", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 45.99, "person_name": "Hardware Store", "note": "Gardening tools", "user_id": 1}'
+
+# Outdoor equipment
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 5, "amount": 299.99, "person_name": "Outdoor Store", "note": "Camping gear", "user_id": 1}'
+
+# Outdoor expenses
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?fuzzy_note=garden&fuzzy_note=outdoor&fuzzy_note=camping" -Method GET
+
+## Use Case: Hobby and Recreation
+# Hobby supplies
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 5, "amount": 125.00, "person_name": "Art Supply Store", "note": "Painting materials", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 5, "amount": 89.99, "person_name": "Craft Store", "note": "Knitting supplies", "user_id": 1}'
+
+# Recreation activities
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 5, "amount": 55.00, "person_name": "Recreation Center", "note": "Bowling night", "user_id": 1}'
+
+# Hobby tracking
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?category_ids=5&fuzzy_note=hobby&fuzzy_note=art&fuzzy_note=craft" -Method GET
+
+# Error Examples (20 samples)
+
+## Error: Invalid JSON
+# Missing closing brace
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 50.00'  # Returns 400 Bad Request
+
+## Error: Missing Required Fields
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"note": "Test transaction"}'  # Returns 400 - wallet_id, category_id, amount, user_id required
+
+## Error: Invalid Wallet ID
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 999, "category_id": 1, "amount": 50.00, "user_id": 1}'  # Returns 400 - wallet not found
+
+## Error: Invalid Category ID
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 999, "amount": 50.00, "user_id": 1}'  # Returns 400 - category not found
+
+## Error: Invalid User ID
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 50.00, "user_id": 999}'  # Returns 400 - user not found
+
+## Error: Transaction Not Found
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions/999" -Method GET  # Returns 404 Not Found
+
+## Error: Person Not Found
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 50.00, "person_id": 999, "user_id": 1}'  # Returns 400 - person not found
+
+## Error: Invalid Amount
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": "invalid", "user_id": 1}'  # Returns 400 - invalid amount format
+
+## Error: Empty Person Name
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 50.00, "person_name": "", "user_id": 1}'  # Person creation ignored, transaction created without person
+
+## Error: Invalid Date Format
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?start_transaction_time=invalid-date" -Method GET  # Returns 400 - invalid date format
+
+## Error: Wallet-Specific Transaction Access
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/transactions/5" -Method GET  # Returns 404 if transaction doesn't belong to wallet 1
+
+## Error: Invalid Amount Operator
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?amount_op=invalid&amount_value=100" -Method GET  # Ignores invalid operator, returns all transactions
+
+## Error: Category Not Belonging to Wallet
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 999, "amount": 50.00, "user_id": 1}'  # Returns 400 - category not found or doesn't belong to wallet
+
+## Error: Duplicate Category Name
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Food & Dining", "icon": "🍽️"}'  # Returns 400 - category name must be unique per wallet
+
+## Error: Invalid Parent Category
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Subcategory", "icon": "📁", "parent_id": 999}'  # Returns 400 - parent category not found
+
+## Error: Cannot Delete Category With Children
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories/1" -Method DELETE  # Returns 400 if category has subcategories
+
+## Error: Cannot Delete Category With Transactions
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories/1" -Method DELETE  # Returns 400 if category has associated transactions
+
+## Error: Invalid Wallet Group Name
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/walletgroups" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_group_name": ""}'  # Returns 400 - name required
+
+## Error: Wallet Already in Group
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/walletgroups/1/wallets/1" -Method POST  # Returns 400 if wallet is already in the group
+
+## Error: Self-Transfer in Wallet-Specific Endpoint
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/transactions/1" -Method PUT -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 2}'  # Returns 400 - cannot change wallet in wallet-specific endpoint
+
+## Error: Database Connection Issues
+# If database is down or connection fails, all endpoints return 500 Internal Server Error with connection error message
+
+## Error: Concurrent Modification
+# If multiple users modify the same transaction simultaneously, one will succeed and others may get 409 Conflict or database constraint errors
+
+## Error: Invalid Filter Combinations
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?amount_op=gt&amount_value=invalid" -Method GET  # Returns 400 - invalid amount value format
+
+# Category Hierarchy and Transaction Assignment Journeys
+
+## Category Journey 1: Food and Dining Hierarchy
+# 1. Create root category
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Food & Dining", "icon": "🍽️", "is_global": false}'
+
+# 2. Create subcategories
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Restaurants", "icon": "🍽️", "parent_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Fast Food", "icon": "🍔", "parent_id": 2}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Fine Dining", "icon": "🥂", "parent_id": 2}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Groceries", "icon": "🛒", "parent_id": 1}'
+
+# 3. View category tree
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories/tree" -Method GET
+
+# 4. Add transactions to different levels
+# Root level transaction
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 1, "amount": 25.00, "note": "General food expense", "user_id": 1}'
+
+# Subcategory transactions
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 3, "amount": 15.99, "person_name": "Burger Joint", "note": "Lunch burger", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 4, "amount": 85.50, "person_name": "Fine Restaurant", "note": "Dinner date", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 5, "amount": 67.30, "person_name": "SuperMart", "note": "Weekly groceries", "user_id": 1}'
+
+# 5. Filter by specific subcategory
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?category_ids=3" -Method GET
+
+# 6. Filter by parent category (should include all subcategories)
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?category_ids=1,2" -Method GET
+
+## Category Journey 2: Transportation Expense Hierarchy
+# 1. Create transportation root
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Transportation", "icon": "🚗", "is_global": false}'
+
+# 2. Create transportation subcategories
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Fuel", "icon": "⛽", "parent_id": 6}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Public Transport", "icon": "🚇", "parent_id": 6}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Parking", "icon": "🅿️", "parent_id": 6}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Maintenance", "icon": "🔧", "parent_id": 6}'
+
+# 3. Add maintenance sub-subcategories
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Oil Change", "icon": "🛢️", "parent_id": 10}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Tire Service", "icon": "🛞", "parent_id": 10}'
+
+# 4. View full tree
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories/tree" -Method GET
+
+# 5. Add transactions at various levels
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 6, "amount": 45.00, "note": "General transport", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 7, "amount": 55.00, "person_name": "Gas Station", "note": "Fuel", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 8, "amount": 12.00, "person_name": "Transit Authority", "note": "Bus pass", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 9, "amount": 8.00, "note": "Downtown parking", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 11, "amount": 75.00, "person_name": "Auto Shop", "note": "Oil change", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 12, "amount": 150.00, "person_name": "Tire Store", "note": "New tires", "user_id": 1}'
+
+# 6. Filter by maintenance category (includes subcategories)
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?category_ids=10" -Method GET
+
+# 7. Filter by specific leaf categories
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?category_ids=7,8,9" -Method GET
+
+# 8. Monthly transportation summary
+$startOfMonth = (Get-Date -Day 1 -Hour 0 -Minute 0 -Second 0).ToString("yyyy-MM-ddTHH:mm:ssZ")
+$endOfMonth = (Get-Date -Day (Get-Date).Day -Hour 23 -Minute 59 -Second 59).ToString("yyyy-MM-ddTHH:mm:ssZ")
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?category_ids=6&start_transaction_time=$startOfMonth&end_transaction_time=$endOfMonth" -Method GET
+
+## Category Journey 3: Global Categories and Cross-Wallet Usage
+# 1. Create global entertainment category
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Entertainment", "icon": "🎬", "is_global": true}'
+
+# 2. Create entertainment subcategories
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Movies", "icon": "🎥", "parent_id": 13}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Games", "icon": "🎮", "parent_id": 13}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Music", "icon": "🎵", "parent_id": 13}'
+
+# 3. Check if global categories synced to wallet 2
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/2/categories" -Method GET
+
+# 4. Add transactions using global categories from different wallets
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 14, "amount": 25.00, "note": "Movie ticket", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 2, "category_id": 15, "amount": 59.99, "note": "New video game", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 16, "amount": 9.99, "note": "Music streaming", "user_id": 1}'
+
+# 5. Filter entertainment across all wallets
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?category_ids=13" -Method GET
+
+# 6. Sync global categories manually if needed
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories/13/sync-global" -Method POST
+
+## Category Journey 4: Category Management and Restructuring
+# 1. Create initial categories
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Shopping", "icon": "🛍️", "is_global": false}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Clothing", "icon": "👕", "parent_id": 17}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Electronics", "icon": "📱", "parent_id": 17}'
+
+# 2. Add transactions
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 18, "amount": 89.99, "note": "New shirt", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 19, "amount": 299.99, "note": "Smartphone", "user_id": 1}'
+
+# 3. Restructure categories - move electronics to new parent
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Technology", "icon": "💻", "is_global": false}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories/19" -Method PUT -Headers @{"Content-Type"="application/json"} -Body '{"parent_id": 20}'
+
+# 4. Update category names
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories/18" -Method PUT -Headers @{"Content-Type"="application/json"} -Body '{"name": "Fashion", "icon": "👗"}'
+
+# 5. View updated tree
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories/tree" -Method GET
+
+# 6. Transactions still accessible under new structure
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?category_ids=17,20" -Method GET
+
+## Category Journey 5: Budget Categories and Expense Tracking
+# 1. Create budget-oriented categories
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Monthly Budget", "icon": "📊", "is_global": false}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Under Budget", "icon": "✅", "parent_id": 21}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Over Budget", "icon": "⚠️", "parent_id": 21}'
+
+# 2. Create spending categories
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Dining Out", "icon": "🍽️", "is_global": false}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/wallets/1/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Coffee Shops", "icon": "☕", "is_global": false}'
+
+# 3. Add budgeted vs actual transactions
+# Budget allocations (income category might be better, but using existing)
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 22, "amount": 300.00, "note": "Monthly dining budget", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 23, "amount": 100.00, "note": "Monthly coffee budget", "user_id": 1}'
+
+# Actual spending
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 24, "amount": 45.67, "note": "Restaurant dinner", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 24, "amount": 78.90, "note": "Weekend dining", "user_id": 1}'
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"wallet_id": 1, "category_id": 25, "amount": 12.50, "note": "Morning coffee", "user_id": 1}'
+
+# 4. Monthly budget analysis
+$startOfMonth = (Get-Date -Day 1 -Hour 0 -Minute 0 -Second 0).ToString("yyyy-MM-ddTHH:mm:ssZ")
+$endOfMonth = (Get-Date -Day (Get-Date).Day -Hour 23 -Minute 59 -Second 59).ToString("yyyy-MM-ddTHH:mm:ssZ")
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?category_ids=24,25&start_transaction_time=$startOfMonth&end_transaction_time=$endOfMonth" -Method GET
+
+# 5. Budget vs actual comparison (would need frontend calculation)
+Invoke-RestMethod -Uri "https://ml.xlr.ovh//api/transactions?category_ids=21,22,23,24,25&start_transaction_time=$startOfMonth&end_transaction_time=$endOfMonth" -Method GET
+
