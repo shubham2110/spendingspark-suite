@@ -1,43 +1,295 @@
-import axios from 'axios';
-
-const API_BASE_URL = 'https://ml.xlr.ovh/api';
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+const API_BASE = "https://ml.xlr.ovh/api";
 
 // Types
 export interface User {
-  id: number;
+  user_id: number;
   username: string;
   name: string;
   email: string;
   user_type: string;
-  wallets?: Wallet[];
+  created_at: string;
+  updated_at: string;
+  default_wallet_id?: number;
 }
 
 export interface Wallet {
-  id: number;
+  wallet_id: number;
   name: string;
   icon: string;
   is_enabled: boolean;
   balance: number;
+  last_modified_time: string;
 }
 
 export interface Category {
-  id: number;
+  category_id: number;
   name: string;
   icon: string;
   parent_id: number | null;
+  root_id: number;
+  wallet_id: number;
   is_global: boolean;
-  children?: Category[];
+  wallet?: Wallet;
+}
+
+export interface CategoryTreeNode {
+  category: Category;
+  children: CategoryTreeNode[] | null;
+}
+
+export interface CategoryTree {
+  roots: CategoryTreeNode[];
+}
+
+export interface Person {
+  person_id: number;
+  person_name: string;
+  alias: string;
 }
 
 export interface Transaction {
-  id: number;
+  transaction_id: number;
+  category_id: number;
+  amount: number;
+  note: string | null;
+  person_id: number | null;
+  wallet_id: number;
+  transaction_time: string;
+  entry_time: string;
+  last_modified_time: string;
+  user_id: number;
+  category?: Category;
+  person?: Person;
+  wallet?: Wallet;
+  user?: User;
+}
+
+export interface InitStatus {
+  success: boolean;
+  message: string;
+  init_done: boolean;
+  is_new_db: boolean;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+  error?: string;
+}
+
+// API Functions
+async function apiRequest<T>(
+  endpoint: string,
+  options?: RequestInit
+): Promise<ApiResponse<T>> {
+  const response = await fetch(`${API_BASE}${endpoint}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options?.headers,
+    },
+  });
+  const data = await response.json();
+  if (data.error) {
+    throw new Error(data.error);
+  }
+  return data;
+}
+
+// Init
+export async function checkInitStatus(): Promise<InitStatus> {
+  const response = await fetch(`${API_BASE}/initdone`);
+  return response.json();
+}
+
+export async function initDatabase(params: {
+  force_migrate: boolean;
+  default_wallet_name: string;
+  admin_username: string;
+  admin_password: string;
+  admin_email: string;
+  admin_name: string;
+}): Promise<ApiResponse<any>> {
+  return apiRequest("/init", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
+// Users
+export async function getUsers(): Promise<ApiResponse<User[]>> {
+  return apiRequest("/users");
+}
+
+export async function createUser(params: {
+  username: string;
+  name: string;
+  email: string;
+  password: string;
+  user_type: string;
+  wallet_name: string;
+  wallet_group_name: string;
+  create_categories: boolean;
+}): Promise<ApiResponse<{ user: User; wallet: Wallet }>> {
+  return apiRequest("/users", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
+export async function getUserWallets(userId: number): Promise<ApiResponse<Wallet[]>> {
+  return apiRequest(`/users/${userId}/wallets`);
+}
+
+// Wallets
+export async function getWallets(): Promise<ApiResponse<Wallet[]>> {
+  return apiRequest("/wallets");
+}
+
+export async function getWallet(walletId: number): Promise<ApiResponse<Wallet>> {
+  return apiRequest(`/wallets/${walletId}`);
+}
+
+export async function createWallet(params: {
+  name: string;
+  icon: string;
+  is_enabled: boolean;
+  balance: number;
+}): Promise<ApiResponse<Wallet>> {
+  return apiRequest("/wallets", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
+export async function updateWallet(
+  walletId: number,
+  params: Partial<{
+    name: string;
+    icon: string;
+    is_enabled: boolean;
+    balance: number;
+  }>
+): Promise<ApiResponse<Wallet>> {
+  return apiRequest(`/wallets/${walletId}`, {
+    method: "PUT",
+    body: JSON.stringify(params),
+  });
+}
+
+export async function deleteWallet(walletId: number): Promise<ApiResponse<void>> {
+  return apiRequest(`/wallets/${walletId}`, { method: "DELETE" });
+}
+
+// Categories
+export async function getCategories(walletId: number): Promise<ApiResponse<Category[]>> {
+  return apiRequest(`/wallets/${walletId}/categories`);
+}
+
+export async function getCategoryTree(walletId: number): Promise<ApiResponse<CategoryTree>> {
+  return apiRequest(`/wallets/${walletId}/categories/tree`);
+}
+
+export async function createCategory(
+  walletId: number,
+  params: {
+    name: string;
+    icon: string;
+    parent_id: number | null;
+    is_global: boolean;
+  }
+): Promise<ApiResponse<Category>> {
+  return apiRequest(`/wallets/${walletId}/categories`, {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
+export async function updateCategory(
+  walletId: number,
+  categoryId: number,
+  params: Partial<{
+    name: string;
+    icon: string;
+    is_global: boolean;
+    parent_id: number | null;
+  }>
+): Promise<ApiResponse<Category>> {
+  return apiRequest(`/wallets/${walletId}/categories/${categoryId}`, {
+    method: "PUT",
+    body: JSON.stringify(params),
+  });
+}
+
+export async function deleteCategory(
+  walletId: number,
+  categoryId: number
+): Promise<ApiResponse<void>> {
+  return apiRequest(`/wallets/${walletId}/categories/${categoryId}`, {
+    method: "DELETE",
+  });
+}
+
+// Transactions
+export interface TransactionFilters {
+  wallet_id?: number;
+  user_id?: number;
+  category_ids?: number[];
+  person_id?: number;
+  start_transaction_time?: string;
+  end_transaction_time?: string;
+  start_entry_time?: string;
+  end_entry_time?: string;
+  start_last_modified_time?: string;
+  end_last_modified_time?: string;
+  amount_op?: "eq" | "gt" | "lt" | "ge" | "le";
+  amount_value?: number;
+  fuzzy_note?: string;
+}
+
+function buildQueryString(filters: TransactionFilters): string {
+  const params = new URLSearchParams();
+  if (filters.wallet_id) params.append("wallet_id", filters.wallet_id.toString());
+  if (filters.user_id) params.append("user_id", filters.user_id.toString());
+  if (filters.category_ids?.length)
+    params.append("category_ids", filters.category_ids.join(","));
+  if (filters.person_id) params.append("person_id", filters.person_id.toString());
+  if (filters.start_transaction_time)
+    params.append("start_transaction_time", filters.start_transaction_time);
+  if (filters.end_transaction_time)
+    params.append("end_transaction_time", filters.end_transaction_time);
+  if (filters.start_entry_time)
+    params.append("start_entry_time", filters.start_entry_time);
+  if (filters.end_entry_time)
+    params.append("end_entry_time", filters.end_entry_time);
+  if (filters.start_last_modified_time)
+    params.append("start_last_modified_time", filters.start_last_modified_time);
+  if (filters.end_last_modified_time)
+    params.append("end_last_modified_time", filters.end_last_modified_time);
+  if (filters.amount_op) params.append("amount_op", filters.amount_op);
+  if (filters.amount_value !== undefined)
+    params.append("amount_value", filters.amount_value.toString());
+  if (filters.fuzzy_note) params.append("fuzzy_note", filters.fuzzy_note);
+  return params.toString();
+}
+
+export async function getTransactions(
+  filters?: TransactionFilters
+): Promise<ApiResponse<Transaction[]>> {
+  const query = filters ? `?${buildQueryString(filters)}` : "";
+  return apiRequest(`/transactions${query}`);
+}
+
+export async function getWalletTransactions(
+  walletId: number,
+  filters?: Omit<TransactionFilters, "wallet_id">
+): Promise<ApiResponse<Transaction[]>> {
+  const query = filters ? `?${buildQueryString(filters)}` : "";
+  return apiRequest(`/wallets/${walletId}/transactions${query}`);
+}
+
+export async function createTransaction(params: {
   wallet_id: number;
   category_id: number;
   amount: number;
@@ -45,262 +297,60 @@ export interface Transaction {
   note?: string;
   user_id: number;
   transaction_time?: string;
-  entry_time?: string;
-  last_modified_time?: string;
-  category?: Category;
-  wallet?: Wallet;
+}): Promise<ApiResponse<Transaction>> {
+  return apiRequest("/transactions", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
 }
 
-export interface Person {
-  id: number;
+export async function updateTransaction(
+  transactionId: number,
+  params: Partial<{
+    category_id: number;
+    amount: number;
+    note: string;
+    person_name: string;
+    transaction_time: string;
+  }>
+): Promise<ApiResponse<Transaction>> {
+  return apiRequest(`/transactions/${transactionId}`, {
+    method: "PUT",
+    body: JSON.stringify(params),
+  });
+}
+
+export async function deleteTransaction(
+  transactionId: number
+): Promise<ApiResponse<void>> {
+  return apiRequest(`/transactions/${transactionId}`, { method: "DELETE" });
+}
+
+// Persons
+export async function getPersons(): Promise<ApiResponse<Person[]>> {
+  return apiRequest("/persons");
+}
+
+export async function createPerson(params: {
   person_name: string;
   alias?: string;
+}): Promise<ApiResponse<Person>> {
+  return apiRequest("/persons", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
 }
 
-export interface WalletGroup {
-  id: number;
-  wallet_group_name: string;
-  wallets?: Wallet[];
+export async function updatePerson(
+  personId: number,
+  params: Partial<{ person_name: string; alias: string }>
+): Promise<ApiResponse<Person>> {
+  return apiRequest(`/persons/${personId}`, {
+    method: "PUT",
+    body: JSON.stringify(params),
+  });
 }
 
-// Init API
-export const checkServerStatus = async () => {
-  const response = await api.get('/initdone');
-  return response.data?.init_done || false;
-};
-
-export const initDatabase = async (data: {
-  force_migrate?: boolean;
-  default_wallet_name: string;
-  admin_username: string;
-  admin_password: string;
-  admin_email: string;
-  admin_name: string;
-}) => {
-  const response = await api.post('/init', data);
-  return response.data;
-};
-
-// Users API
-export const getUsers = async (): Promise<User[]> => {
-  const response = await api.get('/users');
-  return response.data?.data || [];
-};
-
-export const createUser = async (data: {
-  username: string;
-  name: string;
-  email: string;
-  password: string;
-  user_type?: string;
-  wallet_name?: string;
-  wallet_group_name?: string;
-  create_categories?: boolean;
-}): Promise<User> => {
-  const response = await api.post('/users', data);
-  return response.data;
-};
-
-export const updateUser = async (id: number, data: Partial<User>): Promise<User> => {
-  const response = await api.put(`/users/${id}`, data);
-  return response.data;
-};
-
-export const getUserWallets = async (userId: number): Promise<Wallet[]> => {
-  const response = await api.get(`/users/${userId}/wallets`);
-  return response.data;
-};
-
-export const addUserToWallet = async (userId: number, walletId: number) => {
-  const response = await api.post(`/users/${userId}/wallets/${walletId}`);
-  return response.data;
-};
-
-export const removeUserFromWallet = async (userId: number, walletId: number) => {
-  const response = await api.delete(`/users/${userId}/wallets/${walletId}`);
-  return response.data;
-};
-
-// Wallets API
-export const getWallets = async (): Promise<Wallet[]> => {
-  const response = await api.get('/wallets');
-  const wallets = response.data?.data || [];
-  return wallets.map(wallet => ({
-    id: wallet.wallet_id,
-    name: wallet.name,
-    icon: wallet.icon,
-    is_enabled: wallet.is_enabled,
-    balance: wallet.balance,
-  }));
-};
-
-export const getWallet = async (id: number): Promise<Wallet> => {
-  const response = await api.get(`/wallets/${id}`);
-  return response.data;
-};
-
-export const createWallet = async (data: {
-  name: string;
-  icon?: string;
-  is_enabled?: boolean;
-  balance?: number;
-}): Promise<Wallet> => {
-  const response = await api.post('/wallets', data);
-  return response.data;
-};
-
-export const updateWallet = async (id: number, data: Partial<Wallet>): Promise<Wallet> => {
-  const response = await api.put(`/wallets/${id}`, data);
-  return response.data;
-};
-
-export const deleteWallet = async (id: number) => {
-  const response = await api.delete(`/wallets/${id}`);
-  return response.data;
-};
-
-// Categories API
-export const getCategories = async (walletId: number): Promise<Category[]> => {
-  const response = await api.get(`/wallets/${walletId}/categories`);
-  return response.data;
-};
-
-export const getCategoryTree = async (walletId: number): Promise<Category[]> => {
-  const response = await api.get(`/wallets/${walletId}/categories/tree`);
-  return response.data?.data || [];
-};
-
-export const createCategory = async (walletId: number, data: {
-  name: string;
-  icon?: string;
-  parent_id?: number | null;
-  is_global?: boolean;
-}): Promise<Category> => {
-  const response = await api.post(`/wallets/${walletId}/categories`, data);
-  return response.data;
-};
-
-export const updateCategory = async (walletId: number, categoryId: number, data: Partial<Category>): Promise<Category> => {
-  const response = await api.put(`/wallets/${walletId}/categories/${categoryId}`, data);
-  return response.data;
-};
-
-export const deleteCategory = async (walletId: number, categoryId: number) => {
-  const response = await api.delete(`/wallets/${walletId}/categories/${categoryId}`);
-  return response.data;
-};
-
-// Transactions API
-export interface TransactionFilters {
-  user_id?: number;
-  wallet_id?: number;
-  category_ids?: string;
-  person_id?: number;
-  start_transaction_time?: string;
-  end_transaction_time?: string;
-  start_entry_time?: string;
-  end_entry_time?: string;
-  amount_op?: 'gt' | 'lt' | 'eq' | 'ge' | 'le';
-  amount_value?: number;
-  fuzzy_note?: string;
+export async function deletePerson(personId: number): Promise<ApiResponse<void>> {
+  return apiRequest(`/persons/${personId}`, { method: "DELETE" });
 }
-
-export const getTransactions = async (filters?: TransactionFilters): Promise<Transaction[]> => {
-  const params = new URLSearchParams();
-  if (filters) {
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        params.append(key, String(value));
-      }
-    });
-  }
-  const response = await api.get(`/transactions${params.toString() ? `?${params.toString()}` : ''}`);
-  return response.data?.data || [];
-};
-
-export const getWalletTransactions = async (walletId: number, filters?: TransactionFilters): Promise<Transaction[]> => {
-  const params = new URLSearchParams();
-  if (filters) {
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        params.append(key, String(value));
-      }
-    });
-  }
-  const response = await api.get(`/wallets/${walletId}/transactions${params.toString() ? `?${params.toString()}` : ''}`);
-  return response.data;
-};
-
-export const getTransaction = async (id: number): Promise<Transaction> => {
-  const response = await api.get(`/transactions/${id}`);
-  return response.data;
-};
-
-export const createTransaction = async (data: {
-  wallet_id: number;
-  category_id: number;
-  amount: number;
-  person_name?: string;
-  note?: string;
-  user_id: number;
-}): Promise<Transaction> => {
-  const response = await api.post('/transactions', data);
-  return response.data;
-};
-
-export const updateTransaction = async (id: number, data: Partial<Transaction>): Promise<Transaction> => {
-  const response = await api.put(`/transactions/${id}`, data);
-  return response.data;
-};
-
-export const deleteTransaction = async (id: number) => {
-  const response = await api.delete(`/transactions/${id}`);
-  return response.data;
-};
-
-// Persons API
-export const getPersons = async (): Promise<Person[]> => {
-  const response = await api.get('/persons');
-  return response.data;
-};
-
-export const createPerson = async (data: {
-  person_name: string;
-  alias?: string;
-}): Promise<Person> => {
-  const response = await api.post('/persons', data);
-  return response.data;
-};
-
-export const updatePerson = async (id: number, data: Partial<Person>): Promise<Person> => {
-  const response = await api.put(`/persons/${id}`, data);
-  return response.data;
-};
-
-export const deletePerson = async (id: number) => {
-  const response = await api.delete(`/persons/${id}`);
-  return response.data;
-};
-
-// Wallet Groups API
-export const getWalletGroups = async (): Promise<WalletGroup[]> => {
-  const response = await api.get('/walletgroups');
-  return response.data;
-};
-
-export const createWalletGroup = async (data: { wallet_group_name: string }): Promise<WalletGroup> => {
-  const response = await api.post('/walletgroups', data);
-  return response.data;
-};
-
-export const updateWalletGroup = async (id: number, data: { wallet_group_name: string }): Promise<WalletGroup> => {
-  const response = await api.put(`/walletgroups/${id}`, data);
-  return response.data;
-};
-
-export const deleteWalletGroup = async (id: number) => {
-  const response = await api.delete(`/walletgroups/${id}`);
-  return response.data;
-};
-
-export default api;
